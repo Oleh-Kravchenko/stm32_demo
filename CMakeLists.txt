@@ -12,19 +12,23 @@ SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY NEVER)
 SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER)
 
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcpu=cortex-m4 -mthumb -fdata-sections -ffunction-sections -fno-common -g3 -O0")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcpu=cortex-m4 -mthumb -fdata-sections -ffunction-sections -fno-common")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=cortex-m4 -mthumb -fdata-sections -ffunction-sections -fno-common")
 SET(CMAKE_EXE_LINKER_FLAGS "-T${CMAKE_CURRENT_SOURCE_DIR}/misc/stm32.ld -nostartfiles --gc-sections")
 SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
 SET(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 
+MACRO(MKFIRMWARE TARGET)
+	GET_TARGET_PROPERTY(TARGET_ELF_PATH ${TARGET} LOCATION)
+	ADD_CUSTOM_TARGET("${TARGET}.bin" ALL
+		COMMAND arm-eabi-objcopy --output-format=binary ${TARGET_ELF_PATH} "${TARGET}.bin"
+		DEPENDS "${TARGET}"
+		COMMENT "Making binary ${TARGET}.bin"
+	)
+	SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${TARGET}.bin")
+ENDMACRO(MKFIRMWARE)
+
 ADD_SUBDIRECTORY(lib/stm32 stm32)
 ADD_SUBDIRECTORY(mod/simple_led simple_led)
 
-ADD_CUSTOM_TARGET(simple_led.bin ALL
-COMMAND arm-eabi-objcopy --output-format=binary ${CMAKE_CURRENT_BINARY_DIR}/simple_led/simple_led simple_led.bin
-DEPENDS simple_led
-COMMENT "Making binary simple_led.bin"
-)
-
-SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES simple_led.bin)
+MKFIRMWARE(simple_led)
